@@ -3,19 +3,19 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
-import * as Linking from 'expo-linking'; // Ensure you have expo-linking installed
+import * as Linking from 'expo-linking';
 
 import { AppProvider } from './src/context/AppContext';
 import LoginScreen from './src/screen/LoginScreen';
 import RegisterScreen from './src/screen/RegisterScreen';
+import SetupProfileScreen from './src/screen/SetupProfileScreen'; // New
 import HomeScreen from './src/screen/HomeScreen';
 import ProfileScreen from './src/screen/ProfileScreen';
-import ForgotPasswordScreen from './src/screen/ForgotPasswordScreen'; // New
-import ResetPasswordScreen from './src/screen/ResetPasswordScreen';   // New
+import ForgotPasswordScreen from './src/screen/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screen/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
-// Define your deep link prefix (e.g., internportal://)
 const prefix = Linking.createURL('/');
 
 export default function App() {
@@ -25,8 +25,9 @@ export default function App() {
       screens: {
         Login: 'login',
         Register: 'register',
+        SetupProfile: 'setup-profile', // Added for deep linking support
         ForgotPassword: 'forgot-password',
-        ResetPassword: 'reset-password', // This matches the redirect in Supabase
+        ResetPassword: 'reset-password',
         Home: 'home',
       },
     },
@@ -42,11 +43,25 @@ export default function App() {
               headerTintColor: '#fff' 
             }}
           >
+            {/* Authentication Flow */}
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset' }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'New Password' }} />
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Intern Dashboard', headerBackVisible: false }} />
+            
+            {/* Onboarding Flow (The Second Step) */}
+            <Stack.Screen 
+              name="SetupProfile" 
+              component={SetupProfileScreen} 
+              options={{ title: 'Complete Profile', headerLeft: () => null }} // Disable back button during setup
+            />
+
+            {/* Main Application Flow */}
+            <Stack.Screen 
+              name="Home" 
+              component={HomeScreen} 
+              options={{ title: 'Intern Dashboard', headerBackVisible: false }} 
+            />
             <Stack.Screen name="Profile" component={ProfileScreen} />
           </Stack.Navigator>
         </NavigationContainer>

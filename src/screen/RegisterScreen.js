@@ -20,56 +20,33 @@ import { supabase } from "../lib/supabase";
 export default function RegisterScreen({ navigation }) {
   const theme = useTheme();
 
-  // Auth States
+  // Auth States Only
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // Profile States
-  const [fullName, setFullName] = useState("");
-  const [workplace, setWorkplace] = useState("");
-  const [studentId, setStudentId] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   // Validation
   const isEmailInvalid = () => email.length > 0 && !email.includes("@");
-  const isFormIncomplete = () =>
-    !email || !password || !fullName || !studentId || !workplace;
+  const isFormIncomplete = () => !email || !password;
 
   const handleRegister = async () => {
-    if (isFormIncomplete()) return Alert.alert("Error", "Fill all fields.");
+    if (isFormIncomplete()) return Alert.alert("Error", "Please enter an email and password.");
     setLoading(true);
 
     try {
-      // 1. Sign up the user in Auth
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+      // 1. Simple Auth Sign Up
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password 
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
 
-      if (data?.user) {
-        // 2. THE NUCLEAR UPSERT
-        // We use .upsert to tell the DB: "If you see this ID, just OVERWRITE it."
-        const { error: profileError } = await supabase.from("profiles").upsert(
-          {
-            id: data.user.id,
-            name: fullName,
-            workplace: workplace,
-            position: "Intern",
-            student_id: studentId,
-            role: "student",
-            email: email,
-          },
-          { onConflict: "id" }, // This is the magic line that kills the pkey error
-        );
-
-        if (profileError) throw profileError;
-
+      if (data.user) {
         Alert.alert(
-          "Success!",
-          "Account created. Check your Gmail for the link.",
+          "Verification Sent", 
+          "Please check your email to verify your account. After that, you can log in to set up your profile.",
+          [{ text: "Go to Login", onPress: () => navigation.navigate('Login') }]
         );
       }
     } catch (err) {
@@ -90,39 +67,11 @@ export default function RegisterScreen({ navigation }) {
           contentContainerStyle={styles.scrollContent}
         >
           <Text variant="headlineSmall" style={styles.title}>
-            Student Registration
+            Join InternPortal
           </Text>
           <Text style={styles.subtitle}>
-            Setup your intern profile for {workplace || "your workplace"}.
+            Create your account to get started.
           </Text>
-
-          <TextInput
-            label="Full Name"
-            mode="outlined"
-            value={fullName}
-            onChangeText={setFullName}
-            style={styles.input}
-            left={<TextInput.Icon icon="account" />}
-          />
-
-          <TextInput
-            label="Student ID"
-            mode="outlined"
-            keyboardType="numeric"
-            value={studentId}
-            onChangeText={setStudentId}
-            style={styles.input}
-            left={<TextInput.Icon icon="card-account-details" />}
-          />
-
-          <TextInput
-            label="Workplace (e.g., Luna Edge)"
-            mode="outlined"
-            value={workplace}
-            onChangeText={setWorkplace}
-            style={styles.input}
-            left={<TextInput.Icon icon="office-building" />}
-          />
 
           <View style={styles.authSection}>
             <TextInput
@@ -159,7 +108,7 @@ export default function RegisterScreen({ navigation }) {
             style={styles.registerBtn}
             contentStyle={{ height: 54 }}
           >
-            Create Student Account
+            Sign Up
           </Button>
 
           <Button
@@ -177,7 +126,7 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: { padding: 25, paddingBottom: 40 },
+  scrollContent: { padding: 25, justifyContent: 'center', flexGrow: 1 },
   title: { textAlign: "center", fontWeight: "bold", color: "#6200ee" },
   subtitle: {
     textAlign: "center",

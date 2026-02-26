@@ -17,25 +17,37 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // 1. Authenticate the user
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({ email, password });
       
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          Alert.alert(
-            "Verify Your Email",
-            "You haven't confirmed your email yet. Please check your inbox for the verification link.",
-            [{ text: "OK" }]
-          );
+      if (authError) {
+        if (authError.message.includes("Email not confirmed")) {
+          Alert.alert("Verify Your Email", "Please check your inbox for the verification link.");
         } else {
-          Alert.alert("Login Failed", "Invalid email or password. Please try again.");
+          Alert.alert("Login Failed", "Invalid email or password.");
         }
-      } else {
-        // AppContext's onAuthStateChange will handle session persistence,
-        // but navigation.replace ensures the stack is cleared.
-        navigation.replace('Home');
+        setLoading(false);
+        return;
+      }
+
+      if (user) {
+        // 2. CHECK: Does this user have a completed profile?
+        // We look for 'name' because it's a required field in your setup screen.
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+        // 3. ROUTE: Send to Setup if profile is missing, otherwise Home
+        if (!profile || !profile.name) {
+          navigation.replace('SetupProfile'); 
+        } else {
+          navigation.replace('Home');
+        }
       }
     } catch (err) {
-      Alert.alert("Connection Error", "Could not reach the server. Please check your network.");
+      Alert.alert("Connection Error", "Could not reach the server.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +71,6 @@ export default function LoginScreen({ navigation }) {
             mode="outlined" 
             autoCapitalize="none" 
             keyboardType="email-address"
-            returnKeyType="next"
             value={email} 
             onChangeText={setEmail} 
             left={<TextInput.Icon icon="email-outline" />}
@@ -70,7 +81,6 @@ export default function LoginScreen({ navigation }) {
             label="Password" 
             mode="outlined" 
             secureTextEntry={secureText} 
-            returnKeyType="done"
             value={password} 
             onChangeText={setPassword} 
             left={<TextInput.Icon icon="lock-outline" />}
@@ -121,22 +131,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1, justifyContent: 'center' },
   authContainer: { flex: 1, paddingHorizontal: 32, backgroundColor: '#fff' },
   center: { alignItems: 'center', marginBottom: 48 },
-  avatar: { backgroundColor: '#6200ee', elevation: 4 },
-  authTitle: { marginTop: 16, fontWeight: 'bold', color: '#6200ee', letterSpacing: 0.5 },
+  avatar: { backgroundColor: '#6200ee' },
+  authTitle: { marginTop: 16, fontWeight: 'bold', color: '#6200ee' },
   subtitle: { color: '#757575', marginTop: 4 },
   form: { width: '100%' },
   inputSpacing: { marginBottom: 12 },
-  forgotPasswordContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-    paddingVertical: 4,
-  },
-  mainBtn: { borderRadius: 12, elevation: 2 },
+  forgotPasswordContainer: { alignSelf: 'flex-end', marginBottom: 24 },
+  mainBtn: { borderRadius: 12 },
   btnContent: { height: 54 },
-  footer: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    marginTop: 24 
-  },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   linkText: { fontWeight: 'bold' },
 });
